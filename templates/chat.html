@@ -1,0 +1,56 @@
+<html>
+
+<head>
+    <title>Flask-SocketIO-Chat</title>
+    <script type="text/javascript" src="//code.jquery.com/jquery-1.4.2.min.js"></script>
+    <script type="text/javascript" src="//cdn.socket.io/4.4.1/socket.io.min.js"></script>
+    <script type="text/javascript" charset="utf-8">
+        var socket;
+        function send_message(msg) {
+            $('#chat').val($('#chat').val() + msg + '\n');
+            $('#chat').scrollTop($('#chat')[0].scrollHeight);
+        }
+        $(document).ready(function () {
+            socket = io.connect('http://' + document.domain + ':' + location.port + '/chat');
+            socket.on('connect', function () {
+                socket.emit('joined', {});
+            });
+            socket.on('status', function (data) { send_message(data.msg) });
+            socket.on('message', function (data) {
+                $('#chat').val($('#chat').val() + data.msg + '\n');
+                $('#chat').scrollTop($('#chat')[0].scrollHeight);
+            });
+            $('#text').keypress(function (e) {
+                var code = e.keyCode || e.which;
+                if (code == 13) {
+                    console.log("send message")
+                    text = $('#text').val();
+                    $('#text').val('');
+                    socket.emit('text', { msg: text });
+                }
+            });
+        });
+        function leave_room() {
+            socket.emit('left', {}, function () {
+                socket.disconnect();
+
+                // go back to the login page
+                window.location.href = "{{ url_for('index') }}";
+            });
+        }
+    </script>
+</head>
+
+<body>
+    <h1>Flask-SocketIO-Chat</h1>
+    <textarea id="chat" cols="80" rows="20"></textarea><br><br>
+    <input id="text" size="80" placeholder="Enter your message here"><br><br>
+    <a href="#" onclick="leave_room();">Change Name</a>
+
+    <script>
+        {% for msg in messages %}send_message("{{msg.msg}}");
+        {% endfor %}
+    </script>
+</body>
+
+</html>
